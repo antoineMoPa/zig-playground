@@ -1,0 +1,13 @@
+<script type="module">
+  const importObject = {
+      env: {
+          print: (message) => console.log(message),
+      }
+  };
+
+  WebAssembly.instantiateStreaming(fetch("add.wasm"), importObject).then(
+      (results) => {
+          console.log(results.instance.exports.add(4, 5));
+      },
+  );
+</script>
