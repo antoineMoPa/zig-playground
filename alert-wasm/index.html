@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="module">
+      let memory;
+      let bufferPointer;
+
+      const importObject = {
+          env: {
+              alertWithGlobalBufferAndSize: (size) => {
+                  const decoder = new TextDecoder("utf-8");
+                  const start = bufferPointer.value;
+                  const slice = memory.buffer.slice(start, start + size);
+                  alert(decoder.decode(slice));
+              }
+          }
+      };
+
+      WebAssembly.instantiateStreaming(fetch("alert.wasm"), importObject).then(
+          (results) => {
+              memory = results.instance.exports.memory;
+              bufferPointer = results.instance.exports.buffer;
+
+              results.instance.exports.main();
+          },
+      );
+    </script>
+    </body>
+</html>
