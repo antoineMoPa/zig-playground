@@ -24,8 +24,26 @@ fn sendTokenString(message: []const u8) void {
 export fn main() void {
     const str: type = []const u8;
 
+    // sendToken(str, "(");
+    // sendToken(str, "console.log");
+    // sendToken(str, "(");
+    // sendToken(str, "+");
+    // sendToken(i32, 42);
+    // sendToken(str, "(");
+    // sendToken(str, "+");
+    // sendToken(i32, 4);
+    // sendToken(i32, 5);
+    // sendToken(i32, 1);
+    // sendToken(str, ")");
+    // sendToken(str, ")");
+    // sendToken(str, ")");
+
     sendToken(str, "(");
-    sendToken(str, "alert");
-    sendToken(i32, 42);
+    sendToken(str, "console.log");
+    sendToken(str, "(");
+    sendToken(str, "+");
+    sendToken(i32, 40);
+    sendToken(i32, 2);
+    sendToken(str, ")");
     sendToken(str, ")");
 }

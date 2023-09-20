@@ -20,14 +20,30 @@
 
                   if (instruction === '(') {
                       let arr = [];
+                      let parent = iwp;
                       iwp.push(arr);
                       iwp = arr;
+                      iwp.__parent = parent;
                   }
                   else if (instruction === ')') {
-                      if (iwp.length > 0) {
-                          window[iwp[0]](...iwp.slice(1));
+                      if (iwp[0] === '+') {
+                          let items = iwp.slice(1);
+                          let result = items.reduce((acc, val) => acc + val, 0);
+                          iwp.__parent[iwp.__parent.length - 1] = result;
                       }
-                      iwp = instructions;
+                      else if (iwp.length > 0) {
+                          let path = iwp[0].split('.');
+                          let object = window;
+                          while(path.length > 0) {
+                              let property = path.shift();
+                              object = object[property];
+                          }
+                          let result = object(...iwp.slice(1));;
+                          iwp.__parent[iwp.__parent.length - 1] = result;
+                      }
+                      if (iwp.__parent) {
+                          iwp = iwp.__parent;
+                      }
                   }
                   else {
                       iwp.push(instruction);
