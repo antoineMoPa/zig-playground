@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="module">
+      let memory;
+      let bufferPointer;
+      let instructions = [];
+      // Instruction write pointer
+      let iwp = instructions;
+
+      const importObject = {
+          env: {
+              receiveStringToken: (size) => {
+                  const decoder = new TextDecoder("utf-8");
+                  const start = bufferPointer.value;
+                  const slice = memory.buffer.slice(start, start + size);
+                  const instruction = decoder.decode(slice);
+
+                  if (instruction === '(') {
+                      let arr = [];
+                      iwp.push(arr);
+                      iwp = arr;
+                  }
+                  else if (instruction === ')') {
+                      if (iwp.length > 0) {
+                          window[iwp[0]](...iwp.slice(1));
+                      }
+                      iwp = instructions;
+                  }
+                  else {
+                      iwp.push(instruction);
+                  }
+              },
+              receiveNumberToken: (value) => {
+                  iwp.push(value);
+              }
+          }
+      };
+
+      WebAssembly.instantiateStreaming(fetch("main.wasm"), importObject).then(
+          (results) => {
+              memory = results.instance.exports.memory;
+              bufferPointer = results.instance.exports.buffer;
+
+              results.instance.exports.main();
+          },
+      );
+    </script>
+    </body>
+</html>
