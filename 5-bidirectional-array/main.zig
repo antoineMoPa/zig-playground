@@ -1,8 +1,9 @@
 const std = @import("std");
 
-// Must match definitions in native code
+// Must match definitions in js code
 const TYPE_NULL = 0;
-const TYPE_FLOAT = 1;
+const TYPE_INT_8 = 1;
+const TYPE_STR = 2;
 
 // JS communication output data.
 // (Zig to JS commmunication buffer where we send expressions)
@@ -25,6 +26,7 @@ extern fn alertu8(u8) void;
 
 const JSResult = struct {
     value: u8,
+    str: [buffer_size]u8,
     valueType: u8,
 
     pub fn asInt(self: JSResult) u8 {
@@ -38,6 +40,8 @@ fn sendToken(comptime T: type, message: T) void {
         receiveStringToken(@intCast(message.len));
     } else if (T == u8) {
         receiveNumberToken(@floatFromInt(message));
+    } else if (T == usize) {
+        receiveNumberToken(@floatFromInt(message));
     } else if (T == f32) {
         receiveNumberToken(message);
     }
@@ -46,13 +50,20 @@ fn sendToken(comptime T: type, message: T) void {
 fn closeExpressionAndGetResult() JSResult {
     var result = JSResult{
         .value = 0,
+        .str = undefined,
         .valueType = 0,
     };
 
     closeExpression();
 
     result.valueType = u8Buffer[0];
-    result.value = u8Buffer[1];
+
+    if (result.valueType == TYPE_INT_8) {
+        result.value = u8Buffer[1];
+    }
+    if (result.valueType == TYPE_STR) {
+        std.mem.copy(u8, result.str[0..], u8Buffer[1..]);
+    }
 
     return result;
 }
@@ -69,6 +80,7 @@ fn debug(comptime T: type, message: T) void {
 }
 
 export fn main() void {
+    // Some math
     openExpression();
     sendToken(str, "MathOps.add");
     sendToken(u8, 40);
@@ -90,4 +102,11 @@ export fn main() void {
     debug(u8, result1.asInt());
     debug(str, "Result 2");
     debug(u8, result2.asInt());
+
+    // Some strings
+    openExpression();
+    sendToken(str, "randomString");
+    const result = closeExpressionAndGetResult();
+    debug(usize, result.str.len);
+    debug(str, result.str[0..12 :0]);
 }

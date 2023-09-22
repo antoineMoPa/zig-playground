@@ -7,11 +7,16 @@ let iwp = instructions;
 
 // Must match definitions in native code
 const TYPE_NULL = 0;
-const TYPE_FLOAT = 1;
+const TYPE_INT_8 = 1;
+const TYPE_STR = 2;
 
 window.MathOps = {
     add: (...items) => items.reduce((acc, val) => acc + val, 0),
     mul: (...items) => items.reduce((acc, val) => acc * val, 1),
+};
+
+window.randomString = () => {
+    return 'Hello world'
 };
 
 const importObject = {
@@ -41,8 +46,8 @@ const importObject = {
                 }
                 let result = object(...iwp.slice(1));
                 iwp.__parent[iwp.__parent.length - 1] = result;
+
                 retVal = result;
-                retType = 0; // TODO determine type
             }
             // This expression is now closed and evaluated
             // Next we'll move back to processing parent expression
@@ -56,8 +61,20 @@ const importObject = {
             }
 
             const mem = new Uint8Array(memory.buffer);
-            mem[u8BufferPointer.value + 0] = retType;
-            mem[u8BufferPointer.value + 1] = retVal;
+
+            if (typeof retVal === 'string') {
+                const decoder = new TextEncoder();
+                const arr = decoder.encode(retVal);
+                mem[u8BufferPointer.value + 0] = TYPE_STR;
+                // NULL terminator
+                for (let i = 0; i < arr.length; i++) {
+                    mem[u8BufferPointer.value + 1 + i] = arr[i];
+                }
+
+            } else {
+                mem[u8BufferPointer.value + 0] = TYPE_INT_8;
+                mem[u8BufferPointer.value + 1] = retVal;
+            }
         },
         receiveStringToken: (size) => {
             // This is basically a tiny lisp-like language reader that allows
