@@ -22,7 +22,6 @@ extern fn closeExpression() void;
 extern fn receiveStringToken(u8) void;
 extern fn receiveNumberToken(f32) void;
 extern fn getLastExpressionFloatResult() f32;
-extern fn alertu8(u8) void;
 
 const JSResult = struct {
     value: u8,
