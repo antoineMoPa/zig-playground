@@ -1,5 +1,6 @@
 let memory;
-let u8BufferPointer;
+let u8WasmToJSBufferPointer;
+let u8JSToWasmBufferPointer;
 let instructions = [];
 let lastExpressionResult = null;
 // Instruction write pointer
@@ -33,7 +34,6 @@ const importObject = {
         },
         closeExpression: () => {
             let retVal = 0;
-            let retType = 0;
             // When we receive a closing parenthesis,
             // we compute the operation and replace the
             // current expression by its return value.
@@ -65,22 +65,21 @@ const importObject = {
             if (typeof retVal === 'string') {
                 const decoder = new TextEncoder();
                 const arr = decoder.encode(retVal);
-                mem[u8BufferPointer.value + 0] = TYPE_STR;
-                // NULL terminator
+                mem[u8JSToWasmBufferPointer.value + 0] = TYPE_STR;
+                mem[u8JSToWasmBufferPointer.value + 1] = arr.length;
                 for (let i = 0; i < arr.length; i++) {
-                    mem[u8BufferPointer.value + 1 + i] = arr[i];
+                    mem[u8JSToWasmBufferPointer.value + 2 + i] = arr[i];
                 }
-
             } else {
-                mem[u8BufferPointer.value + 0] = TYPE_INT_8;
-                mem[u8BufferPointer.value + 1] = retVal;
+                mem[u8JSToWasmBufferPointer.value + 0] = TYPE_INT_8;
+                mem[u8JSToWasmBufferPointer.value + 1] = retVal;
             }
         },
         receiveStringToken: (size) => {
             // This is basically a tiny lisp-like language reader that allows
             // wasm code to execute code in the browser context.
             const decoder = new TextDecoder("utf-8");
-            const start = u8BufferPointer.value;
+            const start = u8WasmToJSBufferPointer.value;
             const slice = memory.buffer.slice(start, start + size);
             const instruction = decoder.decode(slice);
             iwp.push(instruction);
@@ -94,7 +93,8 @@ const importObject = {
 WebAssembly.instantiateStreaming(fetch("main.wasm"), importObject).then(
     (results) => {
         memory = results.instance.exports.memory;
-        u8BufferPointer = results.instance.exports.u8Buffer;
+        u8WasmToJSBufferPointer = results.instance.exports.u8WasmToJSBuffer;
+        u8JSToWasmBufferPointer = results.instance.exports.u8JSToWasmBuffer;
 
         results.instance.exports.main();
     },

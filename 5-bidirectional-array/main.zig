@@ -8,7 +8,8 @@ const TYPE_STR = 2;
 // JS communication output data.
 // (Zig to JS commmunication buffer where we send expressions)
 const buffer_size: i32 = 2048;
-export var u8Buffer: [buffer_size]u8 = undefined;
+export var u8WasmToJSBuffer: [buffer_size]u8 = undefined;
+export var u8JSToWasmBuffer: [buffer_size]u8 = undefined;
 
 // Define string type for convenience
 const str: type = []const u8;
@@ -25,7 +26,7 @@ extern fn getLastExpressionFloatResult() f32;
 
 const JSResult = struct {
     value: u8,
-    str: [buffer_size]u8,
+    str: []u8,
     valueType: u8,
 
     pub fn asInt(self: JSResult) u8 {
@@ -35,7 +36,7 @@ const JSResult = struct {
 
 fn sendToken(comptime T: type, message: T) void {
     if (T == []const u8) {
-        std.mem.copy(u8, u8Buffer[0..], message[0..]);
+        std.mem.copy(u8, u8WasmToJSBuffer[0..], message[0..]);
         receiveStringToken(@intCast(message.len));
     } else if (T == u8) {
         receiveNumberToken(@floatFromInt(message));
@@ -47,24 +48,29 @@ fn sendToken(comptime T: type, message: T) void {
 }
 
 fn closeExpressionAndGetResult() JSResult {
-    var result = JSResult{
-        .value = 0,
-        .str = undefined,
-        .valueType = 0,
-    };
-
     closeExpression();
 
-    result.valueType = u8Buffer[0];
+    const valueType = u8JSToWasmBuffer[0];
 
-    if (result.valueType == TYPE_INT_8) {
-        result.value = u8Buffer[1];
-    }
-    if (result.valueType == TYPE_STR) {
-        std.mem.copy(u8, result.str[0..], u8Buffer[1..]);
-    }
+    if (valueType == TYPE_STR) {
+        const len = u8JSToWasmBuffer[1];
+        var result = JSResult{
+            .value = 0,
+            .str = undefined,
+            .valueType = 0,
+        };
+        result.str = u8JSToWasmBuffer[2..(2 + len)];
 
-    return result;
+        return result;
+    } else {
+        // Assume valueType == TYPE_INT_8
+        const result = JSResult{
+            .value = u8JSToWasmBuffer[1],
+            .str = undefined,
+            .valueType = u8JSToWasmBuffer[0],
+        };
+        return result;
+    }
 }
 
 fn sendTokenString(message: []const u8) void {
@@ -106,6 +112,7 @@ export fn main() void {
     openExpression();
     sendToken(str, "randomString");
     const result = closeExpressionAndGetResult();
+
     debug(usize, result.str.len);
-    debug(str, result.str[0..12 :0]);
+    debug(str, result.str);
 }
