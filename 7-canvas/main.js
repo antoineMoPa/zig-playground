@@ -13,10 +13,6 @@ const TYPE_STR = 2;
 
 const wasmVariable = {};
 
-window.randomString = () => {
-    return 'Hello world'
-};
-
 // Operations used in remote calls by wasm
 window._wasmVariables = {}
 window._wasmOps = {
